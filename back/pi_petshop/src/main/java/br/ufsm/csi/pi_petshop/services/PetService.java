@@ -1,13 +1,14 @@
 package br.ufsm.csi.pi_petshop.services;
 
-import br.ufsm.csi.pi_petshop.cliente.models.ClienteModel;
-import br.ufsm.csi.pi_petshop.cliente.repositories.ClienteRepository;
-import br.ufsm.csi.pi_petshop.pet.dtos.PetDTO;
-import br.ufsm.csi.pi_petshop.pet.dtos.PetEmailDTO;
-import br.ufsm.csi.pi_petshop.pet.dtos.PetResponseDTO;
-import br.ufsm.csi.pi_petshop.pet.models.PetModel;
-import br.ufsm.csi.pi_petshop.pet.repositories.PetRepository;
+import br.ufsm.csi.pi_petshop.entity.cliente.models.ClienteModel;
+import br.ufsm.csi.pi_petshop.entity.cliente.repositories.ClienteRepository;
+import br.ufsm.csi.pi_petshop.entity.pet.dtos.PetDTO;
+import br.ufsm.csi.pi_petshop.entity.pet.dtos.PetEmailDTO;
+import br.ufsm.csi.pi_petshop.entity.pet.dtos.PetResponseDTO;
+import br.ufsm.csi.pi_petshop.entity.pet.models.PetModel;
+import br.ufsm.csi.pi_petshop.entity.pet.repositories.PetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -74,22 +75,12 @@ public class PetService {
     }
 
     public List<PetResponseDTO> getAllPetsByClientId(Long id) {
-        Optional<ClienteModel> optionalClienteModel = clienteRepository.findById(id);
-
-        if (optionalClienteModel.isPresent()) {
-            Long clientId = optionalClienteModel.get().getId();
-            System.out.println(petRepository.findAll().stream()
-                    .filter(pet -> pet.getCliente().getId().equals(clientId))
-                    .map(this::convertToPetResponseDTO)
-                    .collect(Collectors.toList()));
-            return petRepository.findAll().stream()
-                    .filter(pet -> pet.getCliente().getId().equals(clientId))
-                    .map(this::convertToPetResponseDTO)
-                    .collect(Collectors.toList());
-        } else {
-            throw new IllegalArgumentException("Cliente com ID " + id + " não encontrado.");
-        }
+        List<PetModel> pets = petRepository.findByClienteId(id);
+        return pets.stream()
+                .map(this::convertToPetResponseDTO)
+                .collect(Collectors.toList());
     }
+
 
     public ResponseEntity<?> updatePet(Long id, PetDTO petDTO) {
         Optional<PetModel> optionalPet = petRepository.findById(id);
@@ -114,7 +105,11 @@ public class PetService {
     }
 
     public void deletePet(Long id) {
-        petRepository.deleteById(id);
+        try {
+            petRepository.deleteById(id);
+        } catch (DataIntegrityViolationException e) {
+            throw new IllegalStateException("O pet está vinculado a um agendamento e não pode ser removido.");
+        }
     }
 
     private PetResponseDTO convertToPetResponseDTO(PetModel petModel) {

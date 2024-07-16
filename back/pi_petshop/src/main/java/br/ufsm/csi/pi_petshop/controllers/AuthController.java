@@ -1,17 +1,17 @@
 package br.ufsm.csi.pi_petshop.controllers;
 
-import br.ufsm.csi.pi_petshop.cliente.models.ClienteModel;
-import br.ufsm.csi.pi_petshop.cliente.repositories.ClienteRepository;
+import br.ufsm.csi.pi_petshop.entity.cliente.models.ClienteModel;
+import br.ufsm.csi.pi_petshop.entity.cliente.repositories.ClienteRepository;
 import br.ufsm.csi.pi_petshop.security.TokenService;
 import br.ufsm.csi.pi_petshop.services.AuthorizationService;
 import br.ufsm.csi.pi_petshop.services.UserService;
-import br.ufsm.csi.pi_petshop.user.dtos.AuthenticationDTO;
-import br.ufsm.csi.pi_petshop.user.dtos.LoginResponseDTO;
-import br.ufsm.csi.pi_petshop.user.dtos.RegisterDTO;
-import br.ufsm.csi.pi_petshop.user.dtos.UserDTO;
-import br.ufsm.csi.pi_petshop.user.enums.UserRole;
-import br.ufsm.csi.pi_petshop.user.models.UserModel;
-import br.ufsm.csi.pi_petshop.user.repositories.UserRepository;
+import br.ufsm.csi.pi_petshop.entity.user.dtos.AuthenticationDTO;
+import br.ufsm.csi.pi_petshop.entity.user.dtos.LoginResponseDTO;
+import br.ufsm.csi.pi_petshop.entity.user.dtos.RegisterDTO;
+import br.ufsm.csi.pi_petshop.entity.user.dtos.UserDTO;
+import br.ufsm.csi.pi_petshop.entity.user.enums.UserRole;
+import br.ufsm.csi.pi_petshop.entity.user.models.UserModel;
+import br.ufsm.csi.pi_petshop.entity.user.repositories.UserRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

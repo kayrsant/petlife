@@ -1,7 +1,7 @@
 package br.ufsm.csi.pi_petshop.controllers;
 
-import br.ufsm.csi.pi_petshop.funcionario.dtos.FuncionarioDTO;
-import br.ufsm.csi.pi_petshop.funcionario.models.FuncionarioModel;
+import br.ufsm.csi.pi_petshop.entity.funcionario.dtos.FuncionarioDTO;
+import br.ufsm.csi.pi_petshop.entity.funcionario.models.FuncionarioModel;
 import br.ufsm.csi.pi_petshop.services.FuncionarioService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +23,7 @@ public class FuncionarioController {
         return funcionarioService.saveFuncionario(funcionarioDTO);
     }
 
-    @GetMapping
+    @GetMapping("/todos")
     public List<FuncionarioDTO> getAll() {
         return funcionarioService.getAllFuncionarios();
     }
@@ -31,6 +31,11 @@ public class FuncionarioController {
     @GetMapping("/{id}")
     public Optional<FuncionarioModel> getById(@PathVariable Long id) {
         return funcionarioService.getFuncionarioById(id);
+    }
+
+    @GetMapping
+    public ResponseEntity<?> getFuncionarioByEmail(){
+        return funcionarioService.getFuncionarioByToken();
     }
 
     @PutMapping("/{id}")

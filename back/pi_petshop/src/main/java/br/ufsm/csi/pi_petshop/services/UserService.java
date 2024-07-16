@@ -1,20 +1,27 @@
 package br.ufsm.csi.pi_petshop.services;
 
-import br.ufsm.csi.pi_petshop.cliente.models.ClienteModel;
-import br.ufsm.csi.pi_petshop.cliente.repositories.ClienteRepository;
-import br.ufsm.csi.pi_petshop.user.dtos.UserDTO;
-import br.ufsm.csi.pi_petshop.user.enums.UserRole;
-import br.ufsm.csi.pi_petshop.user.models.UserModel;
-import br.ufsm.csi.pi_petshop.user.repositories.UserRepository;
+import br.ufsm.csi.pi_petshop.controllers.ClienteController;
+import br.ufsm.csi.pi_petshop.entity.cliente.models.ClienteModel;
+import br.ufsm.csi.pi_petshop.entity.cliente.repositories.ClienteRepository;
+import br.ufsm.csi.pi_petshop.entity.user.dtos.UserDTO;
+import br.ufsm.csi.pi_petshop.entity.user.enums.UserRole;
+import br.ufsm.csi.pi_petshop.entity.user.models.UserModel;
+import br.ufsm.csi.pi_petshop.entity.user.repositories.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class UserService {
+
+    private static final Logger logger = LoggerFactory.getLogger(ClienteController.class);
 
     @Autowired
     UserRepository userRepository;
@@ -38,36 +45,35 @@ public class UserService {
         this.userRepository.save(newUser);
     }
 
-    public void createUser(String email, String password, UserRole role) {
-        String encryptedPassword = new BCryptPasswordEncoder().encode(password);
-
-        UserModel newUser = new UserModel(email, encryptedPassword, role);
-        newUser.setCriadoEm(new Date(System.currentTimeMillis()));
-        this.userRepository.save(newUser);
-
-        if (role == UserRole.CLIENTE) {
-            ClienteModel clienteModel = new ClienteModel(null, email, null, null, null);
-            clienteRepository.save(clienteModel);
-        }
-    }
-
-    public void createAdminUser(String email, String password) {
-        createUser(email, password, UserRole.ADMIN);
-    }
-
-    public void createEmployeeUser(String email, String password) {
-        createUser(email, password, UserRole.FUNCIONARIO);
-    }
-
     public List<UserModel> getAllUsers() {
         return userRepository.findAll();
     }
 
-    private UserDTO convertToUserDTO(UserModel userDTO) {
-        return new UserDTO(
-                userDTO.getId(),
-                userDTO.getEmail(),
-                userDTO.getUserRole()
-        );
+    public void updateRole(Long id, UserRole newRole) {
+        UserModel user = userRepository.findById(id).orElse(null);
+        if (user != null) {
+            if (newRole != null) {
+                user.setUserRole(newRole);  // Atualiza o campo de role
+                userRepository.save(user);
+                logger.info("Role atualizada com sucesso: " + user.getUsername() + " para " + newRole);
+            } else {
+                throw new IllegalArgumentException("Role não pode ser nulo");
+            }
+        } else {
+            throw new NoSuchElementException("Usuário não encontrado");
+        }
     }
+
+
+
+    public UserDetails getUserByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    public UserModel getUserModelByEmail(String email){
+        return userRepository.findModelByEmail(email);
+    }
+
+
+
 }

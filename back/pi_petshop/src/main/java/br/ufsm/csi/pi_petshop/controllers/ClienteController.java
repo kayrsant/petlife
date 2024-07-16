@@ -1,10 +1,14 @@
 package br.ufsm.csi.pi_petshop.controllers;
 
-import br.ufsm.csi.pi_petshop.cliente.dtos.ClienteDTO;
-import br.ufsm.csi.pi_petshop.cliente.dtos.ClienteUpdateDTO;
-import br.ufsm.csi.pi_petshop.cliente.models.ClienteModel;
+import br.ufsm.csi.pi_petshop.entity.cliente.dtos.ClienteDTO;
+import br.ufsm.csi.pi_petshop.entity.cliente.dtos.ClienteUpdateDTO;
+import br.ufsm.csi.pi_petshop.entity.cliente.models.ClienteModel;
+import br.ufsm.csi.pi_petshop.entity.user.enums.UserRole;
+import br.ufsm.csi.pi_petshop.entity.user.models.UserModel;
+import br.ufsm.csi.pi_petshop.entity.user.repositories.UserRepository;
 import br.ufsm.csi.pi_petshop.security.TokenService;
 import br.ufsm.csi.pi_petshop.services.ClienteService;
+import br.ufsm.csi.pi_petshop.services.UserService;
 import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +36,12 @@ public class ClienteController {
     @Autowired
     TokenService tokenService;
 
+    @Autowired
+    private UserService userService;
+
+    @Autowired
+    private UserRepository userRepository;
+
     @PostMapping("/create")
     public ResponseEntity<?> create(@RequestBody @Valid ClienteDTO clienteDTO) {
         return clienteService.saveCliente(clienteDTO);
@@ -50,20 +60,24 @@ public class ClienteController {
     public ResponseEntity<?> getCliente() {
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        if (principal instanceof UserDetails) {
-            ClienteModel clienteModel = clienteService.getClienteByEmail(((UserDetails) principal).getUsername());
-            if (clienteModel != null) {
-                ClienteDTO clienteDTO = new ClienteDTO(clienteModel.getId(), clienteModel.getNome(), clienteModel.getEmail(), clienteModel.getTelefone(), clienteModel.getCep(), clienteModel.getCpf());
-                return ResponseEntity.status(HttpStatus.OK).body(clienteDTO);
-            } else {
-                logger.info("Cliente não encontrado.");
+        try {
+            if (principal instanceof UserDetails) {
+                ClienteModel clienteModel = clienteService.getClienteByEmail(((UserDetails) principal).getUsername());
+                if (clienteModel != null) {
+                    ClienteDTO clienteDTO = new ClienteDTO(clienteModel.getId(), clienteModel.getNome(), clienteModel.getEmail(), clienteModel.getTelefone(), clienteModel.getCep(), clienteModel.getCpf());
+                    return ResponseEntity.status(HttpStatus.OK).body(clienteDTO);
+                } else {
+                    logger.info("Cliente não encontrado.");
+                }
             }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Cliente não encontrado.");
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Cliente não encontrado.");
     }
 
     @GetMapping("/cliente")
-    public ResponseEntity<?> getClienteByEmail(@PathVariable String email) {
+    public ResponseEntity<?> getClienteByEmail(@RequestParam String email) {
         if (email == null || email.isEmpty()) {
             return ResponseEntity.badRequest().body("Email não pode ser vazio.");
         }
@@ -76,19 +90,65 @@ public class ClienteController {
         }
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getClienteById(@PathVariable Long id) {
+        if (id == null) {
+            return ResponseEntity.badRequest().body("ID não pode ser vazio.");
+        }
+
+        Optional<ClienteModel> clienteModel = clienteService.getClienteById(id);
+        if (clienteModel.isPresent()) {
+            return ResponseEntity.ok(clienteModel.get());
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Cliente não encontrado");
+        }
+    }
+
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateById(@PathVariable Long id, @RequestBody @Valid ClienteDTO clienteDTO) {
-        return clienteService.updateClienteWithId(id, clienteDTO);
+    public ResponseEntity<?> updateById(@PathVariable Long id, @RequestBody @Valid ClienteUpdateDTO clienteUpdateDTO) {
+        return clienteService.updateCliente(clienteUpdateDTO, id);
     }
 
     @PutMapping
-    public ResponseEntity<?> updateCliente(@RequestBody @Valid ClienteDTO clienteDTO) {
-        ClienteModel cliente = clienteService.getClienteByEmail(clienteDTO.email());
-        if (cliente != null) {
-            ClienteUpdateDTO novoCliente = new ClienteUpdateDTO(cliente.getId(), clienteDTO.nome(), clienteDTO.email(), clienteDTO.telefone(), clienteDTO.cep(), clienteDTO.cpf(), new Date(System.currentTimeMillis()));
-            return clienteService.updateCliente(novoCliente);
+    public ResponseEntity<?> updateByEmail(@RequestBody @Valid ClienteUpdateDTO clienteUpdateDTO) {
+        try {
+            ClienteModel clienteModel = clienteService.getClienteByEmail(clienteUpdateDTO.email());
+            if (clienteModel != null) {
+                clienteModel.setNome(clienteUpdateDTO.nome());
+                clienteModel.setEmail(clienteUpdateDTO.email());
+                clienteModel.setTelefone(clienteUpdateDTO.telefone());
+                clienteModel.setCep(clienteUpdateDTO.cep());
+                clienteModel.setCpf(clienteUpdateDTO.cpf());
+
+                ClienteDTO clienteDTO = new ClienteDTO(clienteUpdateDTO.id(), clienteUpdateDTO.nome(), clienteUpdateDTO.email(), clienteUpdateDTO.telefone(), clienteUpdateDTO.cep(), clienteUpdateDTO.cpf());
+                clienteService.updateCliente(clienteUpdateDTO, clienteModel.getId());
+
+                return ResponseEntity.status(HttpStatus.OK).body(clienteDTO);
+            }
+        }  catch (Exception e){
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao atualizar cliente.");
         }
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Cliente Não Encontrado.");
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao atualizar cliente.");
+    }
+
+    @PutMapping("/{id}/role")
+    public ResponseEntity<?> updateRole(@PathVariable Long id, @RequestParam UserRole role) {
+        try {
+            ClienteModel clienteModel = clienteService.getClienteById(id).orElse(null);
+            if (clienteModel != null) {
+                UserModel userModel = userRepository.findModelByEmail(clienteModel.getEmail());
+                if (userModel != null) {
+                    userService.updateRole(userModel.getId(), role);
+                    return ResponseEntity.ok().body("Role atualizada com sucesso!");
+                } else {
+                    return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuário não encontrado.");
+                }
+            } else {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Cliente não encontrado.");
+            }
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Erro ao atualizar a role do cliente.");
+        }
     }
 
     @DeleteMapping("/{id}")

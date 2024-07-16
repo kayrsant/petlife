@@ -1,11 +1,16 @@
 package br.ufsm.csi.pi_petshop.controllers;
 
-import br.ufsm.csi.pi_petshop.cliente.models.ClienteModel;
-import br.ufsm.csi.pi_petshop.pet.dtos.PetDTO;
-import br.ufsm.csi.pi_petshop.pet.dtos.PetEmailDTO;
-import br.ufsm.csi.pi_petshop.pet.dtos.PetResponseDTO;
-import br.ufsm.csi.pi_petshop.pet.models.PetModel;
-import br.ufsm.csi.pi_petshop.pet.repositories.PetRepository;
+import br.ufsm.csi.pi_petshop.entity.cliente.models.ClienteModel;
+import br.ufsm.csi.pi_petshop.entity.funcionario.models.FuncionarioModel;
+import br.ufsm.csi.pi_petshop.entity.funcionario.repositories.FuncionarioRepository;
+import br.ufsm.csi.pi_petshop.entity.pet.dtos.PetDTO;
+import br.ufsm.csi.pi_petshop.entity.pet.dtos.PetEmailDTO;
+import br.ufsm.csi.pi_petshop.entity.pet.dtos.PetResponseDTO;
+import br.ufsm.csi.pi_petshop.entity.pet.models.PetModel;
+import br.ufsm.csi.pi_petshop.entity.pet.repositories.PetRepository;
+import br.ufsm.csi.pi_petshop.entity.user.enums.UserRole;
+import br.ufsm.csi.pi_petshop.entity.user.models.UserModel;
+import br.ufsm.csi.pi_petshop.entity.user.repositories.UserRepository;
 import br.ufsm.csi.pi_petshop.security.TokenService;
 import br.ufsm.csi.pi_petshop.services.ClienteService;
 import br.ufsm.csi.pi_petshop.services.PetService;
@@ -39,6 +44,10 @@ public class PetController {
     private PetRepository petRepository;
     @Autowired
     private ClienteService clienteService;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private FuncionarioRepository funcionarioRepository;
 
     @PostMapping("/create")
     public ResponseEntity<?> create(@RequestBody @Valid PetEmailDTO petDTO){
@@ -87,6 +96,18 @@ public class PetController {
         }
     }
 
+    @GetMapping("/cliente/{id}")
+    public ResponseEntity<?> getPetsByClientId(@PathVariable Long id) {
+        List<PetResponseDTO> pets = petService.getAllPetsByClientId(id);
+        if (pets.isEmpty()) {
+            System.out.println("Não encontrei pets para o cliente com ID " + id);
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(pets);
+    }
+
+
+
     private String extractToken(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -100,16 +121,14 @@ public class PetController {
         Optional<PetModel> petModelOptional = petRepository.findById(id);
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        if(petModelOptional.isPresent()){
+        if (petModelOptional.isPresent()) {
             ClienteModel clienteModel = clienteService.getClienteByEmail(((UserDetails) principal).getUsername());
-            logger.info("ClienteModel retornado pelo ClienteService: " + clienteModel);
-            if(petModelOptional.get().getCliente().getId().equals(clienteModel.getId())){
-                logger.info("Cliente é dono do pet.");
+            FuncionarioModel funcionarioModel = funcionarioRepository.findByEmail(((UserDetails) principal).getUsername());
+            if (funcionarioModel != null || petModelOptional.get().getCliente().getId().equals(clienteModel.getId())) {
                 petService.deletePet(id);
                 return ResponseEntity.status(HttpStatus.OK).body("Pet deletado com sucesso.");
             }
         }
-        logger.info("Cliente não é dono do pet.");
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Pet não encontrado.");
     }
 

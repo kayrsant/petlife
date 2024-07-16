@@ -72,3 +72,4 @@ CREATE TABLE agendamentos_servicos (
                                        id_servico INT NOT NULL REFERENCES servicos(id),
                                        PRIMARY KEY (id_agendamento, id_servico)
 );
+

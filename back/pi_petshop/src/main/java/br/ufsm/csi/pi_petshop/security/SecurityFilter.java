@@ -3,7 +3,7 @@ package br.ufsm.csi.pi_petshop.security;
 import java.io.IOException;
 
 import br.ufsm.csi.pi_petshop.services.AuthorizationService;
-import br.ufsm.csi.pi_petshop.user.repositories.UserRepository;
+import br.ufsm.csi.pi_petshop.entity.user.repositories.UserRepository;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;

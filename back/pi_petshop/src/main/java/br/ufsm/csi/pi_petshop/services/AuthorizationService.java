@@ -1,6 +1,6 @@
 package br.ufsm.csi.pi_petshop.services;
 
-import br.ufsm.csi.pi_petshop.user.repositories.UserRepository;
+import br.ufsm.csi.pi_petshop.entity.user.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;

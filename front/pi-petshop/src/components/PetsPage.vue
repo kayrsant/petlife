@@ -1,5 +1,6 @@
 <template>
   <div class="pets">
+    <NotificationBar ref="notificationBar" />
     <header>
       <h1>Meus Pets</h1>
     </header>
@@ -52,9 +53,13 @@
 
 <script>
 import axios from "axios";
+import NotificationBar from "@/components/NotificationBar.vue";
 
 export default {
   name: "PetsPage",
+  components: {
+    NotificationBar,
+  },
   data() {
     return {
       pets: [],
@@ -108,8 +113,12 @@ export default {
           config
         );
         this.pets = this.pets.filter((pet) => pet.id !== petId);
+        this.$refs.notificationBar.show("Pet removido com sucesso.", "success");
       } catch (error) {
-        console.error("Erro ao remover pet:", error);
+        this.$refs.notificationBar.show(
+          "Pet não foi removido. Vinculado a um agendamento.",
+          "error"
+        );
       }
     },
     getClientIdFromToken() {

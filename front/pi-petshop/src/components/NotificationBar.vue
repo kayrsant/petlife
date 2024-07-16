@@ -1,4 +1,4 @@
-<!-- src/components/Notification.vue -->
+<!-- src/components/NotificationBar.vue -->
 <template>
   <transition name="slide-fade">
     <div v-if="visible" class="notification" :class="type">
@@ -25,11 +25,21 @@ export default {
         this.visible = false;
       }, 5000);
     },
+    showSuccess(message) {
+      this.show(message, "success");
+    },
+    showError(message) {
+      this.show(message, "error");
+    },
+    showInfo(message) {
+      this.show(message, "info");
+    },
   },
 };
 </script>
 
 <style scoped>
+/* Estilos para a notificação */
 .notification {
   position: fixed;
   bottom: 20px;
